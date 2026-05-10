@@ -22,7 +22,7 @@ export class CartController {
       const { variantId, quantity } = req.body;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-      await CartRepository.addToCart(userId, variantId, quantity);
+      await CartRepository.addItem(userId, variantId, quantity);
       res.status(200).json({ status: 'success', message: 'Item added to cart' });
     } catch (error: any) {
       res.status(500).json({ status: 'error', message: error.message });
