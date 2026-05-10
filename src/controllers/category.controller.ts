@@ -34,7 +34,7 @@ export class CategoryController {
 
   static async getBySlug(req: Request, res: Response) {
     try {
-      const { slug } = req.params;
+      const slug = req.params.slug as string;
       const category = await CategoryRepository.findBySlug(slug);
       if (!category) {
         return res.status(404).json({
@@ -56,7 +56,7 @@ export class CategoryController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       await CategoryRepository.delete(id);
       res.status(200).json({
         success: true,

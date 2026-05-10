@@ -46,7 +46,7 @@ export class ProductController {
 
   static async getBySlug(req: Request, res: Response) {
     try {
-      const { slug } = req.params;
+      const slug = req.params.slug as string;
       const product = await ProductRepository.findBySlug(slug);
       if (!product) {
         return res.status(404).json({
@@ -68,7 +68,7 @@ export class ProductController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const vendorId = (req as any).user.id;
       const role = (req as any).user.role;
 

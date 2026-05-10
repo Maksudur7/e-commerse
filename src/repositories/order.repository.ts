@@ -1,5 +1,5 @@
 import prisma from '../config/prisma';
-import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 
 export class OrderRepository {
   static async createOrder(data: {
@@ -9,7 +9,7 @@ export class OrderRepository {
     paymentMethod: string;
     shippingAddress: any;
   }) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Check and deduct stock for each item
       for (const item of data.items) {
         const variant = await tx.productVariant.findUnique({

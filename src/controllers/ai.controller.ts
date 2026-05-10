@@ -35,7 +35,7 @@ export class AIController {
 
   static async summarizeReviews(req: Request, res: Response) {
     try {
-      const { productId } = req.params;
+      const productId = req.params.productId as string;
       const reviews = await ReviewRepository.findByProductId(productId);
       const summary = await AIService.summarizeReviews(reviews);
       res.status(200).json({ success: true, data: summary });
