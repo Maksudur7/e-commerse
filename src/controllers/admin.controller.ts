@@ -124,22 +124,49 @@ export class AdminController {
     try {
       const orders = await prisma.order.findMany({
         include: {
-          user: true
+          user: { select: { name: true, email: true } },
+          items: {
+            include: { variant: { include: { product: { select: { name: true } } } } }
+          }
         },
-        orderBy: {
-          createdAt: 'desc'
-        }
+        orderBy: { createdAt: 'desc' }
       });
 
       const formattedOrders = orders.map(o => ({
         id: o.id,
+        orderNumber: o.orderNumber,
         customer: o.user.name,
-        date: new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        email: o.user.email,
+        date: new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         total: o.totalAmount,
-        status: o.status
+        status: o.status,
+        paymentMethod: o.paymentMethod,
+        paymentStatus: o.paymentStatus,
+        itemCount: o.items.length
       }));
 
       res.status(200).json({ success: true, data: formattedOrders });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateOrderStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ success: false, message: 'Invalid status value' });
+      }
+
+      const order = await prisma.order.update({
+        where: { id },
+        data: { status }
+      });
+
+      res.status(200).json({ success: true, data: order });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

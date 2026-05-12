@@ -16,6 +16,8 @@ import faqRoutes from './routes/faq.routes';
 import adminRoutes from './routes/admin.routes';
 import notificationRoutes from './routes/notification.routes';
 import wishlistRoutes from './routes/wishlist.routes';
+import prisma from './config/prisma';
+import { AuthService } from './services/auth.service';
 
 
 
@@ -53,7 +55,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://i.ibb.co"],
+      imgSrc: ["'self'", "data:", "blob:", "https://images.unsplash.com", "https://i.ibb.co", "https://res.cloudinary.com", "https://cdn.shopease.com", "https://*.cloudinary.com", "https://lh3.googleusercontent.com", "https://avatars.githubusercontent.com", "https://*.unsplash.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       connectSrc: ["'self'", "http://localhost:5000", "https://api.gemini.google.com"]
     },
@@ -84,6 +86,29 @@ app.use('/api/wishlist', wishlistRoutes);
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'ShopEase AI Backend is running' });
 });
+
+// ============ TEMPORARY DEBUG ROUTES (remove after fix) ============
+// Check who the current token belongs to
+app.get('/api/debug/me', async (req: any, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.json({ error: 'No token provided' });
+  const token = authHeader.split(' ')[1];
+  const decoded = AuthService.verifyToken(token);
+  if (!decoded) return res.json({ error: 'Invalid token' });
+  const user = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { id: true, email: true, role: true } });
+  res.json({ tokenPayload: decoded, dbUser: user });
+});
+
+// List all orders with the user they belong to
+app.get('/api/debug/orders', async (req, res) => {
+  const orders = await prisma.order.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { user: { select: { id: true, email: true } }, items: true }
+  });
+  res.json({ total: orders.length, orders: orders.map(o => ({ id: o.id, orderNumber: o.orderNumber, userId: o.userId, userEmail: o.user?.email, totalAmount: o.totalAmount, status: o.status, itemCount: o.items.length })) });
+});
+// ============ END TEMPORARY DEBUG ROUTES ============
+
 
 // Error Handling Middleware (Sentry Integration)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
