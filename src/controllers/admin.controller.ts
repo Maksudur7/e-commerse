@@ -58,11 +58,11 @@ export class AdminController {
       // 5. Dynamic AI Insights Logic
       const lowStockProducts = await prisma.productVariant.count({ where: { stock: { lt: 5 } } });
       const conversionRate = totalOrders > 0 ? ((totalOrders / (activeCustomers || 1)) * 100).toFixed(1) : 0;
-      
+
       const aiInsights = {
         prediction: `Based on your ${totalOrders} orders, we expect a ${totalRevenue._sum.totalAmount! > 1000 ? 'steady' : 'growing'} trend.`,
-        recommendation: lowStockProducts > 0 
-          ? `Urgent: ${lowStockProducts} products are nearly out of stock. Restock soon!` 
+        recommendation: lowStockProducts > 0
+          ? `Urgent: ${lowStockProducts} products are nearly out of stock. Restock soon!`
           : "Inventory levels are healthy. Consider launching a new promotion.",
         sentiment: "Positive",
         stockRisk: lowStockProducts
@@ -162,7 +162,7 @@ export class AdminController {
       }
 
       const order = await prisma.order.update({
-        where: { id },
+        where: { id: id as string },
         data: { status }
       });
 
