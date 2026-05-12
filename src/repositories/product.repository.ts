@@ -5,10 +5,19 @@ import { slugify } from '../utils/slugify';
 export class ProductRepository {
   static async create(data: any): Promise<Product> {
     const slug = slugify(data.name);
+    
+    const { categoryId, vendorId, ...restData } = data;
+
     return prisma.product.create({
       data: {
-        ...data,
+        ...restData,
         slug,
+        category: {
+          connect: { id: categoryId }
+        },
+        vendor: {
+          connect: { id: vendorId }
+        }
       },
       include: {
         category: true,
@@ -22,15 +31,20 @@ export class ProductRepository {
     minPrice?: number;
     maxPrice?: number;
     search?: string;
+    isFeatured?: boolean;
     page?: number;
     limit?: number;
   }) {
-    const { category, minPrice, maxPrice, search, page = 1, limit = 10 } = filters;
+    const { category, minPrice, maxPrice, search, isFeatured, page = 1, limit = 10 } = filters;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
       status: 'ACTIVE',
     };
+
+    if (isFeatured !== undefined) {
+      where.isFeatured = isFeatured;
+    }
 
     if (category) {
       where.category = { slug: category };

@@ -4,7 +4,7 @@ import { ProductRepository } from '../repositories/product.repository';
 export class ProductController {
   static async create(req: Request, res: Response) {
     try {
-      const vendorId = (req as any).user.id;
+      const vendorId = (req as any).user.userId;
       const product = await ProductRepository.create({
         ...req.body,
         vendorId,
@@ -28,6 +28,7 @@ export class ProductController {
         minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
         maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
         search: req.query.search as string,
+        isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
       };
@@ -69,7 +70,7 @@ export class ProductController {
   static async delete(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
-      const vendorId = (req as any).user.id;
+      const vendorId = (req as any).user.userId;
       const role = (req as any).user.role;
 
       // Admin can delete any product, Vendor only their own
