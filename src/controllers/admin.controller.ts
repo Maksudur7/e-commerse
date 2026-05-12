@@ -109,9 +109,9 @@ export class AdminController {
         id: p.id,
         name: p.name,
         price: p.basePrice,
-        stock: p.variants.reduce((acc, v) => acc + v.stock, 0),
+        stock: p.variants ? p.variants.reduce((acc, v) => acc + v.stock, 0) : 0,
         status: p.status,
-        category: p.category.name
+        category: p.category?.name || 'Unknown'
       }));
 
       res.status(200).json({ success: true, data: formattedProducts });

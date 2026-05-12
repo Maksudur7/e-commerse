@@ -4,7 +4,7 @@ import { ProductRepository } from '../repositories/product.repository';
 export class ProductController {
   static async create(req: Request, res: Response) {
     try {
-      const vendorId = (req as any).user.userId;
+      const vendorId = (req as any).user.userId || (req as any).user.id;
       const product = await ProductRepository.create({
         ...req.body,
         vendorId,
