@@ -10,6 +10,7 @@ router.use(authenticate, authorize('ADMIN'));
 router.get('/stats', AdminController.getStats);
 router.get('/products', AdminController.getProducts);
 router.get('/orders', AdminController.getOrders);
+router.put('/orders/:id/status', AdminController.updateOrderStatus);
 router.get('/customers', AdminController.getCustomers);
 
 export default router;
