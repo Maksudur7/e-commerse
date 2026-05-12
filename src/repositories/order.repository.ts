@@ -54,6 +54,9 @@ export class OrderRepository {
       }
 
       return order;
+    }, {
+      maxWait: 10000, // 10s max wait for connection
+      timeout: 20000,  // 20s max execution time
     });
   }
 

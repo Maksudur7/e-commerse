@@ -12,9 +12,9 @@ export class CartController {
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
       
       const cart = await CartRepository.getCart(userId);
-      res.status(200).json({ status: 'success', data: cart });
+      res.status(200).json({ success: true, data: cart });
     } catch (error: any) {
-      res.status(500).json({ status: 'error', message: error.message });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 
@@ -25,9 +25,9 @@ export class CartController {
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
       await CartRepository.addItem(userId, variantId, quantity);
-      res.status(200).json({ status: 'success', message: 'Item added to cart' });
+      res.status(200).json({ success: true, message: 'Item added to cart' });
     } catch (error: any) {
-      res.status(500).json({ status: 'error', message: error.message });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 }
@@ -48,30 +48,40 @@ export class OrderController {
         shippingAddress
       });
 
-      // Create dynamic notification for admin
-      await NotificationController.createNotification(
+      res.status(201).json({ 
+        success: true, 
+        data: { 
+          id: order.id, 
+          orderNumber: order.orderNumber,
+          totalAmount: order.totalAmount 
+        } 
+      });
+
+      // Create dynamic notification for admin in background
+      NotificationController.createNotification(
         'New Order Received',
         `Order #${order.orderNumber} placed for $${totalAmount}`,
         'SUCCESS',
         '/admin/dashboard?tab=orders'
-      );
-
-      res.status(201).json({ status: 'success', data: order });
+      ).catch(e => console.error('BG Notification Error:', e));
 
     } catch (error: any) {
-      res.status(400).json({ status: 'error', message: error.message });
+      console.error('Order creation error:', error);
+      res.status(400).json({ success: false, message: error.message || 'Internal Server Error' });
     }
   }
 
   static async getMyOrders(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+      console.log('Fetching orders for userId:', userId);
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
       const orders = await OrderRepository.getUserOrders(userId);
-      res.status(200).json({ status: 'success', data: orders });
+      console.log(`Found ${orders.length} orders for user ${userId}`);
+      res.status(200).json({ success: true, data: orders });
     } catch (error: any) {
-      res.status(500).json({ status: 'error', message: error.message });
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 }

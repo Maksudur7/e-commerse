@@ -52,4 +52,44 @@ export class UserController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
+  static async updateAddress(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.userId;
+      const { id } = req.params;
+      const user = await UserRepository.findById(userId);
+      const currentAddresses = (user?.address as any[]) || [];
+      
+      const updatedAddresses = currentAddresses.map((addr: any) => 
+        addr.id === id ? { ...addr, ...req.body } : addr
+      );
+      
+      const updatedUser = await UserRepository.update(userId, {
+        address: updatedAddresses
+      });
+      
+      res.status(200).json({ success: true, addresses: updatedUser.address });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteAddress(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.userId;
+      const { id } = req.params;
+      const user = await UserRepository.findById(userId);
+      const currentAddresses = (user?.address as any[]) || [];
+      
+      const updatedAddresses = currentAddresses.filter((addr: any) => addr.id !== id);
+      
+      const updatedUser = await UserRepository.update(userId, {
+        address: updatedAddresses
+      });
+      
+      res.status(200).json({ success: true, addresses: updatedUser.address });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 }
