@@ -16,8 +16,6 @@ import faqRoutes from './routes/faq.routes';
 import adminRoutes from './routes/admin.routes';
 import notificationRoutes from './routes/notification.routes';
 import wishlistRoutes from './routes/wishlist.routes';
-import prisma from './config/prisma';
-import { AuthService } from './services/auth.service';
 
 
 
@@ -63,6 +61,12 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
+// Logger to catch all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Global Rate Limiter: 5000 requests per 15 minutes
 app.use('/api', rateLimiter(5000, 15 * 60 * 1000));
 
@@ -87,27 +91,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'ShopEase AI Backend is running' });
 });
 
-// ============ TEMPORARY DEBUG ROUTES (remove after fix) ============
-// Check who the current token belongs to
-app.get('/api/debug/me', async (req: any, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.json({ error: 'No token provided' });
-  const token = authHeader.split(' ')[1];
-  const decoded = AuthService.verifyToken(token);
-  if (!decoded) return res.json({ error: 'Invalid token' });
-  const user = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { id: true, email: true, role: true } });
-  res.json({ tokenPayload: decoded, dbUser: user });
+app.get('/api/test-route', (req, res) => {
+  res.json({ message: 'Test route is working' });
 });
-
-// List all orders with the user they belong to
-app.get('/api/debug/orders', async (req, res) => {
-  const orders = await prisma.order.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { user: { select: { id: true, email: true } }, items: true }
-  });
-  res.json({ total: orders.length, orders: orders.map(o => ({ id: o.id, orderNumber: o.orderNumber, userId: o.userId, userEmail: o.user?.email, totalAmount: o.totalAmount, status: o.status, itemCount: o.items.length })) });
-});
-// ============ END TEMPORARY DEBUG ROUTES ============
 
 
 // Error Handling Middleware (Sentry Integration)

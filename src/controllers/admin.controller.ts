@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
+import { OrderStatus } from '@prisma/client';
 
 export class AdminController {
   static async getStats(req: Request, res: Response) {
@@ -155,6 +156,8 @@ export class AdminController {
     try {
       const { id } = req.params;
       const { status } = req.body;
+      
+      console.log(`Updating order ${id} status to ${status}`);
 
       const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
       if (!validStatuses.includes(status)) {
@@ -163,11 +166,12 @@ export class AdminController {
 
       const order = await prisma.order.update({
         where: { id: id as string },
-        data: { status }
+        data: { status: status as OrderStatus }
       });
 
       res.status(200).json({ success: true, data: order });
     } catch (error: any) {
+      console.error("Order status update error:", error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
