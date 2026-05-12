@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { OrderStatus } from '@prisma/client';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 export class AdminController {
   static async getStats(req: Request, res: Response) {
@@ -109,10 +110,12 @@ export class AdminController {
       const formattedProducts = products.map(p => ({
         id: p.id,
         name: p.name,
-        price: p.basePrice,
-        stock: p.variants ? p.variants.reduce((acc, v) => acc + v.stock, 0) : 0,
+        description: p.description,
+        basePrice: p.basePrice,
+        stock: p.stock,
         status: p.status,
-        category: p.category?.name || 'Unknown'
+        images: p.images,
+        category: p.category
       }));
 
       res.status(200).json({ success: true, data: formattedProducts });
@@ -172,6 +175,91 @@ export class AdminController {
       res.status(200).json({ success: true, data: order });
     } catch (error: any) {
       console.error("Order status update error:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createProduct(req: AuthRequest, res: Response) {
+    try {
+      const { name, description, basePrice, categoryId, images } = req.body;
+      const vendorId = req.user?.userId;
+
+      if (!vendorId) {
+        return res.status(401).json({ success: false, message: 'Vendor ID not found' });
+      }
+
+      const product = await prisma.product.create({
+        data: {
+          name,
+          slug: name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Date.now(),
+          description,
+          basePrice: parseFloat(basePrice),
+          images,
+          categoryId,
+          vendorId
+        }
+      });
+
+      res.status(201).json({ success: true, data: product });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteProduct(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      await prisma.product.delete({
+        where: { id: id as string }
+      });
+      res.status(200).json({ success: true, message: 'Product deleted' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getCategories(req: Request, res: Response) {
+    try {
+      console.log('GET /admin/categories requested');
+      const categories = await prisma.category.findMany({
+        include: {
+          _count: {
+            select: { products: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+      console.log(`Found ${categories.length} categories`);
+      res.status(200).json({ success: true, data: categories });
+    } catch (error: any) {
+      console.error('getCategories error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async createCategory(req: Request, res: Response) {
+    try {
+      const { name } = req.body;
+      const category = await prisma.category.create({
+        data: { 
+          name,
+          slug: name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Date.now()
+        }
+      });
+      res.status(201).json({ success: true, data: category });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async deleteCategory(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      await prisma.category.delete({
+        where: { id: id as string }
+      });
+      res.status(200).json({ success: true, message: 'Category deleted' });
+    } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
