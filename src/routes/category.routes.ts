@@ -9,6 +9,7 @@ router.get('/:slug', CategoryController.getBySlug);
 
 // Only Admins can manage categories
 router.post('/', authenticate, authorize('ADMIN'), CategoryController.create);
+router.put('/:id', authenticate, authorize('ADMIN'), CategoryController.update);
 router.delete('/:id', authenticate, authorize('ADMIN'), CategoryController.delete);
 
 export default router;

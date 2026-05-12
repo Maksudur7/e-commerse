@@ -35,7 +35,7 @@ export class ProductRepository {
     page?: number;
     limit?: number;
   }) {
-    const { category, minPrice, maxPrice, search, isFeatured, page = 1, limit = 10 } = filters;
+    const { category, minPrice, maxPrice, search, isFeatured, sortBy, page = 1, limit = 10 } = filters as any;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
@@ -68,6 +68,15 @@ export class ProductRepository {
       };
     }
 
+    let orderBy: any = { createdAt: 'desc' };
+    if (sortBy === 'popular') {
+      orderBy = {
+        reviews: {
+          _count: 'desc'
+        }
+      };
+    }
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
@@ -78,10 +87,11 @@ export class ProductRepository {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
       prisma.product.count({ where }),
     ]);
+
 
     return {
       products,
@@ -123,4 +133,54 @@ export class ProductRepository {
       where: { id, vendorId },
     });
   }
+
+  static async update(id: string, data: any, vendorId?: string): Promise<Product> {
+    const updateData: any = {};
+    
+    if (data.name) {
+      updateData.name = data.name;
+      updateData.slug = slugify(data.name);
+    }
+    if (data.description) updateData.description = data.description;
+    if (data.basePrice) updateData.basePrice = data.basePrice;
+    if (data.images) updateData.images = data.images;
+    if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
+    if (data.status) updateData.status = data.status;
+    if (data.categoryId) {
+      updateData.category = {
+        connect: { id: data.categoryId }
+      };
+    }
+
+    const where: any = { id };
+    if (vendorId) {
+      where.vendorId = vendorId;
+    }
+
+    return prisma.product.update({
+      where,
+      data: updateData,
+      include: {
+        category: true,
+        variants: true,
+      }
+    });
+  }
+
+  static async addReview(productId: string, userId: string, rating: number, comment: string) {
+    return prisma.review.create({
+      data: {
+        productId,
+        userId,
+        rating,
+        comment
+      },
+      include: {
+        product: {
+          select: { slug: true }
+        }
+      }
+    });
+  }
 }
+

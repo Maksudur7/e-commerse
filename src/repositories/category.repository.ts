@@ -39,6 +39,21 @@ export class CategoryRepository {
     });
   }
 
+  static async update(id: string, data: { name?: string; image?: string }): Promise<Category> {
+    const updateData: any = {};
+    if (data.name) {
+      updateData.name = data.name;
+      updateData.slug = slugify(data.name);
+    }
+    if (data.image) {
+      updateData.image = data.image;
+    }
+    return prisma.category.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+
   static async delete(id: string): Promise<Category> {
     return prisma.category.delete({
       where: { id },

@@ -1,6 +1,38 @@
-import { model } from '../config/ai';
+import { openRouterClient, MODEL_NAME } from '../config/ai';
 
 export class AIService {
+  /**
+   * Call OpenRouter API with any prompt
+   */
+  private static async callAI(prompt: string): Promise<string> {
+    try {
+      if (!process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY === 'sk_free') {
+        throw new Error('OPENROUTER_API_KEY is missing or set to placeholder "sk_free". Please set a valid key.');
+      }
+
+      const response = await openRouterClient.post('/chat/completions', {
+        model: MODEL_NAME,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500
+      });
+
+      if (!response.data.choices || response.data.choices.length === 0) {
+        throw new Error('No response from AI model');
+      }
+
+      return response.data.choices[0].message.content;
+    } catch (error: any) {
+      console.error('OpenRouter API Error:', error.response?.data || error.message);
+      throw new Error(`AI Service Error: ${error.message}`);
+    }
+  }
+
   /**
    * Generates a premium, SEO-optimized product description.
    */
@@ -16,9 +48,7 @@ export class AIService {
       Return the result in a clean, structured format.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return this.callAI(prompt);
   }
 
   /**
@@ -42,11 +72,8 @@ export class AIService {
       If information is missing, use null.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
     try {
+      const text = await this.callAI(prompt);
       const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleaned);
     } catch (error) {
@@ -67,9 +94,7 @@ export class AIService {
       Return the response as a list of suggestions with titles and brief justifications.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return this.callAI(prompt);
   }
 
   /**
@@ -94,28 +119,56 @@ export class AIService {
       Cons: [List]
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return this.callAI(prompt);
   }
 
   /**
-   * AI Smart Support: Context-aware chatbot.
+   * AI Smart Support: Full context-aware chatbot with shop knowledge.
    */
   static async chatWithSupport(query: string, context: any) {
-    const prompt = `
-      You are the ShopEase AI Smart Support assistant.
-      User Query: "${query}"
-      
-      Context Information (e.g., user orders, cart items):
-      ${JSON.stringify(context, null, 2)}
-      
-      Provide a helpful, concise, and polite response. If you can't answer, ask the user to contact human support.
-      If the user asks about an order, use the provided context to give status updates.
-    `;
+    const shopInfo = {
+      name: 'ShopEase',
+      categories: context?.categories || ['Fashion', 'Electronics', 'Home & Living'],
+      supportEmail: 'support@shopease.com',
+      returnsPolicy: '30-day money-back guarantee',
+    };
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    const prompt = `You are ShopEase AI - a helpful, professional customer support chatbot.
+    
+    SHOP INFO: ${JSON.stringify(shopInfo)}
+    CONTEXT: ${JSON.stringify(context)}
+    QUERY: "${query}"
+    
+    Answer the user query based on the shop info and context. Be concise.`;
+
+    return this.callAI(prompt);
+  }
+
+  /**
+   * Multi-turn conversation with memory
+   */
+  static async chatWithMemory(messages: Array<{ role: 'user' | 'assistant'; content: string }>, context: any) {
+    try {
+      if (!process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY === 'sk_free') {
+        throw new Error('OPENROUTER_API_KEY is missing.');
+      }
+
+      const response = await openRouterClient.post('/chat/completions', {
+        model: MODEL_NAME,
+        messages: messages.map(m => ({
+          role: m.role,
+          content: m.content
+        })),
+        temperature: 0.8,
+        max_tokens: 1500
+      });
+
+      return response.data.choices[0].message.content;
+    } catch (error: any) {
+      console.error('OpenRouter Chat Error:', error.response?.data || error.message);
+      throw new Error(`Chat failed: ${error.message}`);
+    }
   }
 }
+
+

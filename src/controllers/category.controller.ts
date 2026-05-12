@@ -69,4 +69,20 @@ export class CategoryController {
       });
     }
   }
+
+  static async update(req: Request, res: Response) {
+    try {
+      const id = req.params.id as string;
+      const category = await CategoryRepository.update(id, req.body);
+      res.status(200).json({
+        success: true,
+        data: category,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }

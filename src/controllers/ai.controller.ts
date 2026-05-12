@@ -46,10 +46,19 @@ export class AIController {
 
   static async chatSupport(req: Request, res: Response) {
     try {
-      const { query, context } = req.body;
+      const { query, context, messages } = req.body;
+
+      // If multi-turn conversation with history
+      if (messages && Array.isArray(messages)) {
+        const reply = await AIService.chatWithMemory(messages, context);
+        return res.status(200).json({ success: true, data: reply });
+      }
+
+      // Single turn chat
       const reply = await AIService.chatWithSupport(query, context);
       res.status(200).json({ success: true, data: reply });
     } catch (error: any) {
+      console.error('Chat error:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }

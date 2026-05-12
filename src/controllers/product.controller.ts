@@ -29,9 +29,11 @@ export class ProductController {
         maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
         search: req.query.search as string,
         isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
+        sortBy: req.query.sortBy as string,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
       };
+
       const result = await ProductRepository.findAll(filters);
       res.status(200).json({
         success: true,
@@ -91,4 +93,58 @@ export class ProductController {
       });
     }
   }
+
+  static async update(req: Request, res: Response) {
+    try {
+      const id = req.params.id as string;
+      const vendorId = (req as any).user.userId;
+      const role = (req as any).user.role;
+
+      // Admin can update any product, Vendor only their own
+      const product = await ProductRepository.update(
+        id, 
+        req.body, 
+        role === 'ADMIN' ? undefined : vendorId
+      );
+
+      res.status(200).json({
+        success: true,
+        data: product,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async createReview(req: Request, res: Response) {
+    try {
+      const { productId, rating, comment } = req.body;
+      const userId = (req as any).user.userId;
+
+      const review = await ProductRepository.addReview(productId, userId, rating, comment);
+
+      // Create notification for admin
+      const { NotificationController } = require('./notification.controller');
+      await NotificationController.createNotification(
+        'New Product Review',
+        `User rated product ${rating}/5: "${comment.substring(0, 50)}..."`,
+        'INFO',
+        `/product/${review.product.slug}`
+      );
+
+      res.status(201).json({
+        success: true,
+        data: review,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }
+

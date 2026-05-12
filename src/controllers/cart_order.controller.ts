@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { CartRepository } from '../repositories/cart.repository';
 import { OrderRepository } from '../repositories/order.repository';
+import { NotificationController } from './notification.controller';
+
 
 export class CartController {
   static async getCart(req: AuthRequest, res: Response) {
@@ -46,7 +48,16 @@ export class OrderController {
         shippingAddress
       });
 
+      // Create dynamic notification for admin
+      await NotificationController.createNotification(
+        'New Order Received',
+        `Order #${order.orderNumber} placed for $${totalAmount}`,
+        'SUCCESS',
+        '/admin/dashboard?tab=orders'
+      );
+
       res.status(201).json({ status: 'success', data: order });
+
     } catch (error: any) {
       res.status(400).json({ status: 'error', message: error.message });
     }
