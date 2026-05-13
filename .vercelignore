@@ -4,4 +4,4 @@ node_modules
 .gitignore
 README.md
 scratch/
-prisma/migrations/
+dist/
