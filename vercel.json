@@ -1,10 +1,20 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
   "builds": [
-    { "src": "src/index.ts", "use": "@vercel/node" }
+    {
+      "src": "dist/handler.js",
+      "use": "@vercel/node",
+      "config": { "zeroConfig": true }
+    }
   ],
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/src/index.ts" }
-  ]
+    {
+      "src": "/(.*)",
+      "dest": "dist/handler.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
