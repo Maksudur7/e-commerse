@@ -1,8 +1,9 @@
 {
   "version": 2,
+  "buildCommand": "npm install",
   "builds": [
     {
-      "src": "src/index.ts",
+      "src": "package.json",
       "use": "@vercel/node"
     }
   ],
