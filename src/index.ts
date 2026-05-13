@@ -111,6 +111,10 @@ app.use((req, res) => {
   res.status(404).send(`Backend 404: Route ${req.method} ${req.url} not found`);
 });
 
-app.listen(Number(PORT), '0.0.0.0', () => {
-  logMessage(`🚀 Server running on http://localhost:${PORT}`);
-});
+if (process.env.VERCEL !== '1') {
+  app.listen(Number(PORT), '0.0.0.0', () => {
+    logMessage(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
