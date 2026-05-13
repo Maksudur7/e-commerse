@@ -85,6 +85,10 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 
 
+// Root route for Vercel deployments
+app.get('/', (req, res) => {
+  res.json({ status: 'OK', message: 'ShopEase AI Backend is running' });
+});
 
 // Health Check
 app.get('/health', (req, res) => {
