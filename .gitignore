@@ -8,3 +8,4 @@ prisma
 test.ts
 tsc.ts
 tscconfig.ts
+.vercel
