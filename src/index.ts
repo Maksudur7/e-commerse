@@ -105,7 +105,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+// Catch-all 404 for debugging
+app.use((req, res) => {
+  console.log(`[404] No route found for ${req.method} ${req.url}`);
+  res.status(404).send(`Backend 404: Route ${req.method} ${req.url} not found`);
+});
+
 app.listen(Number(PORT), '0.0.0.0', () => {
   logMessage(`🚀 Server running on http://localhost:${PORT}`);
 });
-

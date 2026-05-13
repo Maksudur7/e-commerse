@@ -112,10 +112,10 @@ export class AdminController {
         name: p.name,
         description: p.description,
         basePrice: p.basePrice,
-        stock: p.stock,
         status: p.status,
         images: p.images,
-        category: p.category
+        category: p.category,
+        variants: p.variants
       }));
 
       res.status(200).json({ success: true, data: formattedProducts });
