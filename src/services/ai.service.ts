@@ -1,4 +1,13 @@
 import { openRouterClient, MODEL_NAME } from '../config/ai';
+import { ProductRepository } from '../repositories/product.repository';
+
+type StylistRequest = {
+  productId?: string;
+  productName?: string;
+  category?: string;
+  style?: string;
+  priceRange?: string;
+};
 
 export class AIService {
   /**
@@ -84,17 +93,104 @@ export class AIService {
   /**
    * AI Personal Stylist: Suggests "complete looks" based on a single product.
    */
-  static async getStylistSuggestions(productName: string, category: string) {
+  static async getStylistSuggestions(request: StylistRequest) {
+    const { productId, productName, category, style, priceRange } = request;
+    const contextLines: string[] = [
+      'You are an expert curator for ShopEase AI. Use the exact user input to create highly relevant suggestions.',
+    ];
+
+    const electronicsKeywords = [
+      'phone',
+      'laptop',
+      'tablet',
+      'camera',
+      'apple',
+      'samsung',
+      'pixel',
+      'macbook',
+      'ipad',
+      'smartwatch',
+      'airpods',
+      'electronics',
+      'headphones',
+      'speaker',
+      'charger',
+      'adapter',
+    ];
+
+    const allInput = [productName, category, style].filter(Boolean).join(' ').toLowerCase();
+    const isElectronics = electronicsKeywords.some((keyword) => allInput.includes(keyword));
+
+    if (productId) {
+      const product = await ProductRepository.findById(productId);
+      if (product) {
+        contextLines.push(`Current product: ${product.name}`);
+        if (product.category?.name) {
+          contextLines.push(`Category: ${product.category.name}`);
+        }
+        if (product.description) {
+          contextLines.push(`Description: ${product.description}`);
+        }
+        if (product.variants?.length) {
+          const prices = product.variants.map((variant: any) => variant.price).filter(Boolean);
+          if (prices.length) {
+            contextLines.push(`Price range: ${Math.min(...prices)} - ${Math.max(...prices)}`);
+          }
+        }
+      }
+    }
+
+    if (!productId && productName) {
+      contextLines.push(`Product or keyword: ${productName}`);
+    }
+    if (category) {
+      contextLines.push(`Category: ${category}`);
+    }
+    if (style) {
+      contextLines.push(`Preferred style or occasion: ${style}`);
+    }
+    if (priceRange) {
+      contextLines.push(`Desired budget: ${priceRange}`);
+    }
+
+    if (contextLines.length === 1) {
+      throw new Error('No stylist inputs provided. Please send productName, productId, category, style, or priceRange.');
+    }
+
+    const recommendationGoal = isElectronics
+      ? 'Recommend 3 to 4 complementary accessories or product bundles that best match the item and category provided.'
+      : 'Recommend 3 to 4 complementary fashion items or outfit elements that best match the item and category provided.';
+
     const prompt = `
-      You are a high-end fashion stylist for ShopEase AI.
-      A customer is looking at a "${productName}" in the "${category}" category.
-      Suggest 3-4 other items that would complete this look (e.g., matching shoes, accessories, or complementary clothing).
-      Explain WHY these items work together.
-      
-      Return the response as a list of suggestions with titles and brief justifications.
+      ${contextLines.join('\n')}
+
+      ${recommendationGoal}
+      Use the exact input and category to keep the suggestions relevant. Do not invent unrelated fashion items for electronics requests.
+
+      Return ONLY valid JSON in this format:
+      [
+        {
+          "name": "Item name or suggestion",
+          "description": "Brief explanation of the item",
+          "price": "Approximate price or pricing guidance",
+          "image": "Optional image URL",
+          "why": "Why this item completes the look"
+        }
+      ]
     `;
 
-    return this.callAI(prompt);
+    const raw = await this.callAI(prompt);
+    const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+      return [{ name: 'Expert Curated', description: cleaned, price: '', image: '', why: '' }];
+    } catch (e) {
+      return [{ name: 'Expert Curated', description: cleaned, price: '', image: '', why: '' }];
+    }
   }
 
   /**

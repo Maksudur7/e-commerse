@@ -25,8 +25,14 @@ export class AIController {
 
   static async getStylist(req: Request, res: Response) {
     try {
-      const { productName, category } = req.body;
-      const suggestions = await AIService.getStylistSuggestions(productName, category);
+      const { productId, productName, category, style, priceRange } = req.body;
+      const suggestions = await AIService.getStylistSuggestions({
+        productId,
+        productName,
+        category,
+        style,
+        priceRange,
+      });
       res.status(200).json({ success: true, data: suggestions });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });

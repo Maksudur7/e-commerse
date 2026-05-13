@@ -128,6 +128,30 @@ export class ProductRepository {
     });
   }
 
+  static async findById(id: string): Promise<any | null> {
+    return prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        variants: true,
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          }
+        },
+        reviews: {
+          include: {
+            user: {
+              select: { name: true, avatar: true }
+            }
+          }
+        }
+      },
+    });
+  }
+
   static async delete(id: string, vendorId: string) {
     return prisma.product.deleteMany({
       where: { id, vendorId },
