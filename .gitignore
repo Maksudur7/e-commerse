@@ -1,5 +1,4 @@
 node_modules
-.env
 dist
 .vscode
 package-lock.json
@@ -9,3 +8,4 @@ test.ts
 tsc.ts
 tscconfig.ts
 .vercel
+config.bat
